@@ -1,0 +1,84 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+<div class="jumbotron">
+    <h1>ASP.NET</h1>
+    <p class="lead">ASP.NET Sample Table</p>
+</div>
+
+<div class="row">
+    <div class="col-sm-4 pull-left">
+        Select Folder
+        <select class="form-control" data-bind="options: folders,
+                value: chosenFolder,
+                valueAllowUnset: true
+                selectedOptions: chosenFolder">
+        </select>
+    </div>
+    <div class="col pull-right input-group">
+        Search:
+        <input type="text" class="form-control" data-bind="textinput: searchText, keyup: $root.SearchData" />
+        <button class="btn btn-link pull-right" data-bind="click: $root.clearForm">Clear</button>
+    </div>
+    
+</div>
+<div class="row">
+    <table style="table-layout" class="table table-hover" id="projectTable">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Project Folder</th>
+                <th>Project Name</th>
+                <th>Project Content</th>
+            </tr>
+        </thead>
+        <tbody data-bind="foreach: filteredData">
+            <tr>
+                <td data-bind="text: Id"></td>
+                <td data-bind="text: ProjectFolder"></td>
+                <td data-bind="text: ProjectName"></td>
+                <td data-bind="text: ProjectContent"></td>
+            </tr>
+        </tbody>
+    </table>
+    <p data-bind="text: chosenFolder"></p>
+</div>
+@section scripts {
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var initialData = '@Html.Raw(Json.Encode(ViewBag.Data))';
+            var data = $.parseJSON(initialData);
+            var folderNames = data.map(a => { return a.ProjectFolder });
+            var folders = ["All",... new Set(folderNames)];
+
+            var myViewModel = function () {
+                var self = this;
+                self.projects = ko.observableArray(data);
+                self.folders = ko.observableArray(folders);
+                self.chosenFolder = ko.observable('All');
+                self.searchText = ko.observable('');
+
+                self.filteredData = ko.computed(function () {
+                    if (self.searchText().length < 2 && self.chosenFolder() == 'All')
+                        return self.projects();
+                    else if (self.searchText().length < 2 && self.chosenFolder() != 'All')
+                        return self.projects().filter(el => {
+                            return el.ProjectFolder.toLowerCase().indexOf(self.chosenFolder().toLowerCase()) > -1
+                        });
+                    else {
+                        return self.filteredData().filter(el => {
+                            return el.ProjectName.toLowerCase().indexOf(self.searchText().toLowerCase()) > -1
+                        });
+                    }
+                })
+
+
+                self.clearForm = function () {
+                    self.searchText('');
+                }
+            };
+            ko.applyBindings(new myViewModel());
+        });
+    </script>
+}
